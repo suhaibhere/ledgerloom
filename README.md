@@ -1,6 +1,6 @@
 # LedgerLoom
 
-LedgerLoom is a local full-stack personal expense application with account registration, authenticated sessions, private SQLite records, UPI statement imports, and deterministic spending analysis. It does not connect to banks or UPI accounts.
+LedgerLoom is a full-stack personal expense application with account registration, authenticated sessions, user-scoped SQLite or PostgreSQL records, UPI statement imports, and deterministic spending analysis. It does not connect to banks or UPI accounts.
 
 ## Run locally
 
@@ -8,19 +8,19 @@ LedgerLoom is a local full-stack personal expense application with account regis
 2. Run `npm install` and `npm start` in this folder (or open **Open LedgerLoom.bat**).
 3. Visit the URL printed in the terminal (normally http://127.0.0.1:4173) and create an account. If that port is occupied, LedgerLoom automatically tries the next available port.
 
-The server creates `data/ledgerloom.sqlite` and applies migrations on first startup. Each user's transactions and receipt records are scoped to their authenticated account. Passwords use scrypt hashes; session cookies are HttpOnly, SameSite Strict, and backed by hashed expiring session tokens. New accounts contain no transactions.
+Without `DATABASE_URL`, the server creates `data/ledgerloom.sqlite` and applies local migrations on first startup. Set `DATABASE_URL` to use PostgreSQL. Each user's transactions and receipt records are scoped to their authenticated account. Passwords use scrypt hashes; session cookies are HttpOnly, SameSite Strict, and backed by hashed expiring session tokens. New accounts contain no transactions.
 
-## Make it available online
+## Free public hosting (Render + Supabase)
 
-To let other people use LedgerLoom, deploy it as a Node web service with persistent storage. For example, on Render:
+The app can use Render for the Node web service and Supabase PostgreSQL for durable database storage. Render's free web service has an ephemeral filesystem, so do not deploy the SQLite database there. Receipt bytes are stored in PostgreSQL when `DATABASE_URL` is configured.
 
-1. Put the `ledgerloom` project folder in a GitHub repository and push it to your account.
-2. In Render, create a Web Service connected to that repository. Set the build command to `npm install` and start command to `npm start`.
-3. Set these environment variables in the hosting dashboard: `NODE_ENV=production`, `HOST=0.0.0.0`, `DATABASE_PATH=/var/data/ledgerloom.sqlite`, and `SESSION_SECRET` to a randomly generated value of at least 32 characters. The host supplies `PORT`.
-4. Attach persistent storage mounted at `/var/data`. The SQLite database and uploaded receipt files live there. Without persistent storage, host files may be erased during deploy or restart. Check the host's current plan and disk costs before creating the service.
-5. Deploy, open the provided HTTPS address, register a new account, and test imports and account isolation before sharing the link.
+1. Create a Supabase project and copy its **Session pooler** PostgreSQL connection string from **Project Settings → Database → Connection string**. Keep it private.
+2. In Render, create a Web Service for this GitHub repository. Use build command `npm install` and start command `npm start`.
+3. Add these Render environment variables: `NODE_ENV=production`, `SESSION_SECRET` (a random secret of at least 32 characters), and `DATABASE_URL` (the Supabase connection string). Render supplies `PORT`; leave `DATABASE_PATH` unset.
+4. Deploy. On first start, LedgerLoom creates its PostgreSQL tables and indexes. Open the Render URL and register an account.
+5. Check `/api/health`; it should report `database: postgres`. Import the sample statement and confirm the dashboard updates before sharing the link.
 
-LedgerLoom binds to `127.0.0.1` for local use and can bind to `0.0.0.0` when configured for hosting. One SQLite-backed service suits a small project or portfolio launch. A larger public service should move to managed PostgreSQL and add monitoring, backups, abuse controls, and a privacy policy. Review these requirements before accepting real financial data from the public.
+The Render free service sleeps after inactivity, so its first request may take about a minute. Supabase may pause free projects after a week of low activity. Free tiers have limits and are suitable for a student/portfolio launch, not a guaranteed-uptime production finance service. Existing local SQLite records are not automatically copied to PostgreSQL.
 
 ## Features
 
@@ -33,7 +33,7 @@ LedgerLoom binds to `127.0.0.1` for local use and can bind to `0.0.0.0` when con
 
 ## Data and configuration
 
-Copy `.env.example` to `.env` to set the host, port, database path, or session secret. Never publish `.env` or the SQLite data directory. Local mode binds to `127.0.0.1`; online deployment needs HTTPS, persistent storage, a strong `SESSION_SECRET`, backups, and a separate security review.
+Copy `.env.example` to `.env` to set the host, port, database path, optional PostgreSQL URL, or session secret. Never publish `.env` or the SQLite data directory. Local mode binds to `127.0.0.1`; hosted deployment needs HTTPS and a strong `SESSION_SECRET`.
 
 ## Limits
 
