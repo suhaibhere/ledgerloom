@@ -1,0 +1,24 @@
+{
+  "name": "ledgerloom",
+  "version": "1.0.0",
+  "description": "Private, full-stack personal finance analysis powered by LedgerLoom.",
+  "main": "server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "node scripts/build-check.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "dotenv": "^18.0.5",
+    "read-excel-file": "^9.3.10"
+  }
+}
