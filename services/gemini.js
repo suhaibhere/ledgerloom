@@ -25,20 +25,26 @@ async function generateChat({ message, history = [], spendingSummary = null, mod
   const contents = history.slice(-10).map(item => ({ role: item.role, parts: [{ text: item.text }] }));
   contents.push({ role: 'user', parts: [{ text: `${message}${context}` }] });
 
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const request = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700 } })
+  };
   let response;
-  try {
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700 } }),
-      signal: AbortSignal.timeout(45000)
-    });
-  } catch (error) {
-    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-    const causeCode = typeof error?.cause?.code === 'string' && /^[A-Z0-9_]{1,40}$/.test(error.cause.code) ? error.cause.code : 'none';
-    console.warn(`Gemini ${timedOut ? 'request timed out' : 'connection failed'} for ${model}; cause=${causeCode}.`);
-    if (timedOut) throw Object.assign(new Error('Gemini is taking too long to respond. Try the Flash-Lite model or send your question again.'), { status: 504 });
-    throw Object.assign(new Error('LedgerLoom could not connect to Google Gemini. Please try again; if this continues, check the Render service logs.'), { status: 502 });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { response = await fetch(endpoint, { ...request, signal: AbortSignal.timeout(45000) }); }
+    catch (error) {
+      const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      const causeCode = typeof error?.cause?.code === 'string' && /^[A-Z0-9_]{1,40}$/.test(error.cause.code) ? error.cause.code : 'none';
+      console.warn(`Gemini ${timedOut ? 'request timed out' : 'connection failed'} for ${model}; cause=${causeCode}.`);
+      if (timedOut) throw Object.assign(new Error('Gemini did not respond within 45 seconds. Try again shortly or choose the other model.'), { status: 504 });
+      throw Object.assign(new Error('LedgerLoom could not connect to Google Gemini. Please try again; if this continues, check the Render service logs.'), { status: 502 });
+    }
+    if (response.status !== 503 || attempt === 1) break;
+    console.warn(`Gemini returned HTTP 503 for ${model}; retrying once after a short delay.`);
+    if (response.body) await response.body.cancel().catch(() => {});
+    await new Promise(resolve => setTimeout(resolve, 700 + Math.random() * 400));
   }
   if (!response.ok) {
     console.warn(`Gemini API request failed with HTTP ${response.status} for model ${model}.`);
