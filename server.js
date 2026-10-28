@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const Busboy = require('busboy');
 const ledger = require('./services/ledger');
 const coach = require('./services/coach');
+const gemini = require('./services/gemini');
 const store = require('./database/store');
 
 const ROOT = __dirname;
@@ -110,8 +111,22 @@ async function handleAPI(req, res, url) {
 
   const user = await userFromRequest(req); if (!user) return fail(res, 401, 'Sign in to continue.'); const uid = user.id;
   if (route === '/api/coach/chat' && method === 'POST') {
-    const body = await readJSON(req, 16 * 1024), message = String(body.message || '').trim();
+    const body = await readJSON(req, 32 * 1024), message = String(body.message || '').trim();
     if (!validString(message, 500)) return fail(res, 400, 'Enter a question of up to 500 characters.');
+    if (body.useGemini === true) {
+      if (!gemini.configured()) return fail(res, 503, "AI chat isn't configured yet. Add GEMINI_API_KEY in Render, or turn off Gemini to use the private Money Coach.");
+      const history = Array.isArray(body.history) ? body.history.slice(-10).filter(item => item && ['user', 'model'].includes(item.role) && typeof item.text === 'string').map(item => ({ role: item.role, text: item.text.slice(0, 1000) })) : [];
+      let spendingSummary = null;
+      if (body.includeSpending === true) {
+        const rows = await all('SELECT transaction_date,amount,type,category FROM transactions WHERE user_id=? ORDER BY transaction_date DESC LIMIT 5000', [uid]);
+        const month = new Date().toISOString().slice(0, 7), current = rows.filter(row => String(row.transaction_date).startsWith(month));
+        const expenses = current.filter(row => row.type === 'EXPENSE');
+        const categories = {};
+        for (const row of expenses) categories[row.category] = (categories[row.category] || 0) + Number(row.amount || 0);
+        spendingSummary = { month, expenseTotal: expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0), incomeTotal: current.filter(row => row.type === 'INCOME').reduce((sum, row) => sum + Number(row.amount || 0), 0), expenseCount: expenses.length, categoryTotals: categories };
+      }
+      return send(res, 200, await gemini.generateChat({ message, history, spendingSummary }));
+    }
     const rows = await all('SELECT id,transaction_date,amount,type,merchant,description,category FROM transactions WHERE user_id=? ORDER BY transaction_date DESC LIMIT 5000', [uid]);
     const transactions = rows.map(row => ({ id: row.id, date: row.transaction_date, amount: Number(row.amount), type: row.type, merchant: row.merchant, description: row.description, category: row.category }));
     return send(res, 200, coach.respond(transactions, message));
@@ -164,8 +179,8 @@ async function handleAPI(req, res, url) {
   return null;
 }
 
-const staticFiles = new Map([['/', 'index.html'], ['/index.html', 'index.html'], ['/styles.css', 'styles.css'], ['/app.js', 'app.js'], ['/sample-upi-statement.csv', 'sample-upi-statement.csv']]);
-function serveStatic(req, res, url) { const name = staticFiles.get(url.pathname); if (!name) return fail(res, 404, 'Not found.'); const filename = path.join(ROOT, name), type = name.endsWith('.css') ? 'text/css' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.csv') ? 'text/csv' : 'text/html'; res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8`, 'Cache-Control': name === 'index.html' ? 'no-cache' : 'public, max-age=300' }); fs.createReadStream(filename).pipe(res); }
+const staticFiles = new Map([['/', 'index.html'], ['/index.html', 'index.html'], ['/styles.css', 'styles.css'], ['/app.js', 'app.js'], ['/favicon.svg', 'favicon.svg'], ['/sample-upi-statement.csv', 'sample-upi-statement.csv']]);
+function serveStatic(req, res, url) { const name = staticFiles.get(url.pathname); if (!name) return fail(res, 404, 'Not found.'); const filename = path.join(ROOT, name), type = name.endsWith('.css') ? 'text/css' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.svg') ? 'image/svg+xml' : name.endsWith('.csv') ? 'text/csv' : 'text/html'; res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8`, 'Cache-Control': name === 'index.html' ? 'no-cache' : 'public, max-age=300' }); fs.createReadStream(filename).pipe(res); }
 const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('X-Frame-Options', 'DENY'); res.setHeader('Referrer-Policy', 'same-origin'); res.setHeader('Permissions-Policy', 'camera=(),microphone=(),geolocation=()');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");

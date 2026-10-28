@@ -22,6 +22,23 @@ function classifyQuestion(question) {
 
 function respond(transactions, question, now = new Date()) {
   const text = String(question || '').trim().toLowerCase();
+  const casual = text.replace(/[!?.,]/g, '').trim();
+  if (/^(hi|hello|hey|hii|good morning|good afternoon|good evening)$/.test(casual)) return {
+    answer: 'Hi! I’m LedgerLoom’s Money Coach. I can help explain your spending, compare categories, spot possible recurring payments, and explore simple savings scenarios. What would you like to know?',
+    evidence: 'I use the transactions saved in your LedgerLoom account.'
+  };
+  if (/^(how are you|how r u|how are u|whats up|what is up)$/.test(casual)) return {
+    answer: 'I’m ready to help you make sense of your money. Ask me about this month’s spending, a merchant or category, recurring payments, or a possible way to spend less.',
+    evidence: 'Money Coach answers are based on your saved transactions.'
+  };
+  if (/^(thanks|thank you|thx)$/.test(casual)) return {
+    answer: 'You’re welcome! Ask whenever you want to review your spending or explore a savings scenario.',
+    evidence: 'Your financial data stays in your LedgerLoom account; no outside AI service is connected.'
+  };
+  if (/^(bye|goodbye|see you)$/.test(casual)) return {
+    answer: 'Take care! I’ll be here when you want to review your LedgerLoom spending.',
+    evidence: 'Money Coach uses deterministic analysis of your saved transactions.'
+  };
   if (!transactions.length) return {
     answer: 'I don’t have any transactions to analyze yet. Import a UPI or bank statement, and I can summarize your spending, categories, and recurring payments.',
     evidence: 'Your ledger has no saved transactions.'
@@ -78,6 +95,13 @@ function respond(transactions, question, now = new Date()) {
   if (/(where|category|biggest|top|main|most)/.test(text) && topCategories.length) {
     const summary = topCategories.slice(0, 3).map(([name, amount]) => `${name}: ${money(amount)}`).join('; ');
     return { answer: `You recorded ${money(spent)} in expenses for ${monthLabel}. Your largest categories are ${summary}. Transfers, income, and refunds aren’t counted as spending here.`, evidence: `${expenses.length} expense transactions in ${currentMonth}.` };
+  }
+
+  if (!/(spend|spent|money|finance|expense|transaction|category|merchant|save|saving|reduce|cut|budget|income|remaining|left|balance|net|recurr|subscription|charge|bill|food|grocery|groceries|shopping|transport|travel|uber|ola|fuel|cab|dining|restaurant|delivery|swiggy|zomato|refund|transfer)/.test(text)) {
+    return {
+      answer: 'I can help with money questions using your saved transactions, but I can’t answer that topic. Try asking “Where did my money go?”, “How much did I spend on food?”, or “Show possible recurring payments.”',
+      evidence: 'This coach focuses on spending patterns and simple, data-based savings scenarios.'
+    };
   }
 
   return {

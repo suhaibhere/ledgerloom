@@ -17,8 +17,9 @@ The app can use Render for the Node web service and Supabase PostgreSQL for dura
 1. Create a Supabase project and copy its **Session pooler** PostgreSQL connection string from **Project Settings → Database → Connection string**. Keep it private.
 2. In Render, create a Web Service for this GitHub repository. Use build command `npm install` and start command `npm start`.
 3. Add these Render environment variables: `NODE_ENV=production`, `SESSION_SECRET` (a random secret of at least 32 characters), and `DATABASE_URL` (the Supabase connection string). Render supplies `PORT`; leave `DATABASE_PATH` unset.
-4. Deploy. On first start, LedgerLoom creates its PostgreSQL tables and indexes. Open the Render URL and register an account.
-5. Check `/api/health`; it should report `database: postgres`. Import the sample statement and confirm the dashboard updates before sharing the link.
+4. To enable open-ended Money Coach chat, create a Gemini API key in Google AI Studio and add `GEMINI_API_KEY` as a private Render environment variable. Optionally set `GEMINI_MODEL` (default `gemini-3.8-flash`). Never put the key in frontend code or commit it. Without a key, the private deterministic spending coach still works.
+5. Deploy. On first start, LedgerLoom creates its PostgreSQL tables and indexes. Open the Render URL and register an account.
+6. Check `/api/health`; it should report `database: postgres`. Import the sample statement and confirm the dashboard updates before sharing the link.
 
 The Render free service sleeps after inactivity, so its first request may take about a minute. Supabase may pause free projects after a week of low activity. Free tiers have limits and are suitable for a student/portfolio launch, not a guaranteed-uptime production finance service. Existing local SQLite records are not automatically copied to PostgreSQL.
 
@@ -28,17 +29,17 @@ The Render free service sleeps after inactivity, so its first request may take a
 - User-scoped transaction CRUD, filtering, searching, sorting, and pagination.
 - CSV and XLSX UPI/bank statement import with date and amount normalization, merchant recognition, income/refund/transfer classification, categorization, and duplicate skipping.
 - Dashboard totals, category and merchant breakdowns, daily/monthly charts, recurring-pattern detection, and evidence-backed deterministic observations calculated from saved records.
-- A private Money Coach chatbox that responds to spending questions using only the signed-in user's saved transactions. It uses transparent deterministic rules; no external AI provider is connected and no chat/financial data is sent to an AI API.
+- Money Coach has two modes: a private, deterministic spending coach that sends no data to an AI provider, and optional open-ended Gemini chat. Gemini processes a message only when the user checks the opt-in box for that message. Recent Gemini chat messages are sent for conversational context. A separate unchecked option allows an aggregate summary of current-month income, expenses, count, and category totals; transaction-level records are never sent. Google may use free-tier submitted content to improve its products, so the consent text is shown in the chat before enabling Gemini.
 - Category corrections saved per user and reused during later imports.
 - Receipt image/PDF upload validation and private storage. OCR is not configured; uploaded receipts are marked for manual review.
 
 ## Data and configuration
 
-Copy `.env.example` to `.env` to set the host, port, database path, optional PostgreSQL URL, or session secret. Never publish `.env` or the SQLite data directory. Local mode binds to `127.0.0.1`; hosted deployment needs HTTPS and a strong `SESSION_SECRET`.
+Copy `.env.example` to `.env` to set the host, port, database path, optional PostgreSQL URL, session secret, or optional Gemini server key. Never publish `.env` or the SQLite data directory. Local mode binds to `127.0.0.1`; hosted deployment needs HTTPS and a strong `SESSION_SECRET`.
 
 ## Limits
 
-PDF statement parsing and receipt OCR are not implemented. The Money Coach uses deterministic rules; it is not a generative AI model and does not provide professional financial advice. The app does not require an AI API. It can be deployed as a small web service but is not hardened for large-scale financial-data hosting.
+PDF statement parsing and receipt OCR are not implemented. Gemini chat requires an owner-provided API key, is optional, and may be subject to Google free-tier rate limits and data-use terms. Without Gemini, the spending coach uses deterministic rules. Neither mode provides professional financial advice. The app can be deployed as a small web service but is not hardened for large-scale financial-data hosting.
 
 ## Tests
 

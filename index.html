@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f7f7f4" />
   <meta name="description" content="LedgerLoom helps you understand where your money goes." />
   <title>LedgerLoom — Understand your money</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -55,12 +56,13 @@
     </div>
   </main>
   <aside class="coach-widget" id="coachWidget" aria-label="LedgerLoom Money Coach" hidden>
-    <header class="coach-header"><span class="coach-mark" aria-hidden="true">✳</span><div><b>Money Coach</b><small>Grounded in your ledger</small></div><button type="button" class="coach-close" id="coachClose" aria-label="Close Money Coach">×</button></header>
-    <p class="coach-disclosure">Answers use your saved transactions and transparent rules. No external AI service is connected.</p>
+    <header class="coach-header"><span class="coach-mark" aria-hidden="true">✳</span><div><b>Money Coach</b><small>Private coach · optional Gemini</small></div><button type="button" class="coach-close" id="coachClose" aria-label="Close Money Coach">×</button></header>
+    <div class="coach-disclosure"><b>Choose how Money Coach answers</b><span>Private coach uses LedgerLoom’s rules and stays on this server. Turn on Gemini for a general-purpose chatbot; your new message and recent Gemini chat history will be processed by Google. Google may use free-tier content to improve products. Spending data is only sent if you separately opt in below.</span></div>
+    <div class="coach-consent"><label><input id="coachUseGemini" type="checkbox"/><span>Use Gemini for this chat message</span></label><label id="coachSpendingOption" class="coach-suboption"><input id="coachIncludeSpending" type="checkbox" disabled/><span>Also include an aggregate summary of my spending</span></label><small id="coachAvailability">External processing is optional. Gemini must be configured by the site owner.</small></div>
     <div class="coach-messages" id="coachMessages" role="log" aria-live="polite" aria-relevant="additions"><div class="coach-message coach-answer">Hi! Ask where your money went, what’s recurring, or where you could try spending less.</div></div>
     <div class="coach-prompts" id="coachPrompts"><button type="button" data-coach-prompt="Where did my money go this month?">Where did it go?</button><button type="button" data-coach-prompt="Where could I save money?">Where could I save?</button><button type="button" data-coach-prompt="Show my recurring payments">Recurring payments</button></div>
-    <form class="coach-form" id="coachForm"><label class="sr-only" for="coachInput">Ask about your spending</label><input id="coachInput" name="message" maxlength="500" autocomplete="off" placeholder="Ask about your spending…" required/><button type="submit" id="coachSend" aria-label="Send question">↑</button></form>
-    <small class="coach-footnote">Estimates are based on imported data, not financial advice.</small>
+    <form class="coach-form" id="coachForm"><label class="sr-only" for="coachInput">Ask Money Coach anything</label><input id="coachInput" name="message" maxlength="500" autocomplete="off" placeholder="Ask Money Coach anything…" required/><button type="submit" id="coachSend" aria-label="Send question">↑</button></form>
+    <small class="coach-footnote">AI can make mistakes. Financial replies are general information, not professional advice.</small>
   </aside>
   <button type="button" class="coach-launcher" id="coachLauncher" aria-label="Open Money Coach" aria-expanded="false"><span aria-hidden="true">✳</span> Money Coach</button>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
