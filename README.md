@@ -28,6 +28,7 @@ The Render free service sleeps after inactivity, so its first request may take a
 - User-scoped transaction CRUD, filtering, searching, sorting, and pagination.
 - CSV and XLSX UPI/bank statement import with date and amount normalization, merchant recognition, income/refund/transfer classification, categorization, and duplicate skipping.
 - Dashboard totals, category and merchant breakdowns, daily/monthly charts, recurring-pattern detection, and evidence-backed deterministic observations calculated from saved records.
+- A private Money Coach chatbox that responds to spending questions using only the signed-in user's saved transactions. It uses transparent deterministic rules; no external AI provider is connected and no chat/financial data is sent to an AI API.
 - Category corrections saved per user and reused during later imports.
 - Receipt image/PDF upload validation and private storage. OCR is not configured; uploaded receipts are marked for manual review.
 
@@ -37,7 +38,7 @@ Copy `.env.example` to `.env` to set the host, port, database path, optional Pos
 
 ## Limits
 
-PDF statement parsing and receipt OCR are not implemented. The app uses deterministic rules and does not require an AI API. It can be deployed as a small web service but is not hardened for large-scale financial-data hosting.
+PDF statement parsing and receipt OCR are not implemented. The Money Coach uses deterministic rules; it is not a generative AI model and does not provide professional financial advice. The app does not require an AI API. It can be deployed as a small web service but is not hardened for large-scale financial-data hosting.
 
 ## Tests
 

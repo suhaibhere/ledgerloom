@@ -4,6 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const Busboy = require('busboy');
 const ledger = require('./services/ledger');
+const coach = require('./services/coach');
 const store = require('./database/store');
 
 const ROOT = __dirname;
@@ -108,6 +109,13 @@ async function handleAPI(req, res, url) {
   if (route === '/api/auth/me' && method === 'GET') { const user = await userFromRequest(req); return user ? send(res, 200, { user: safeUser(user) }) : fail(res, 401, 'Sign in to continue.'); }
 
   const user = await userFromRequest(req); if (!user) return fail(res, 401, 'Sign in to continue.'); const uid = user.id;
+  if (route === '/api/coach/chat' && method === 'POST') {
+    const body = await readJSON(req, 16 * 1024), message = String(body.message || '').trim();
+    if (!validString(message, 500)) return fail(res, 400, 'Enter a question of up to 500 characters.');
+    const rows = await all('SELECT id,transaction_date,amount,type,merchant,description,category FROM transactions WHERE user_id=? ORDER BY transaction_date DESC LIMIT 5000', [uid]);
+    const transactions = rows.map(row => ({ id: row.id, date: row.transaction_date, amount: Number(row.amount), type: row.type, merchant: row.merchant, description: row.description, category: row.category }));
+    return send(res, 200, coach.respond(transactions, message));
+  }
   if (route === '/api/dashboard' && method === 'GET') { const tx = await transactionsFor(uid), months = Math.min(12, Math.max(1, Number(url.searchParams.get('months') || 6))), metrics = ledger.dashboardMetrics(tx, new Date(), months); const imports = await all('SELECT id,filename,status,transaction_count AS "transactionCount",duplicate_count AS "duplicateCount",created_at AS "createdAt" FROM imports WHERE user_id=? ORDER BY created_at DESC LIMIT 10', [uid]); return send(res, 200, { ...metrics, recent: tx.slice(0, 8), imports }); }
   if (route === '/api/transactions' && method === 'GET') {
     const page = Math.min(100000, Math.max(1, Number(url.searchParams.get('page') || 1))), limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') || 50))), params = [uid]; let where = 'user_id=?';
