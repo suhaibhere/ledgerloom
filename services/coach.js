@@ -38,6 +38,15 @@ function respond(transactions, question, now = new Date()) {
   const monthLabel = now.toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' });
   const category = classifyQuestion(text);
   const categorySpend = category ? categoryTotals.get(category) || 0 : null;
+  const merchantTotals = new Map();
+  for (const item of expenses) merchantTotals.set(item.merchant, (merchantTotals.get(item.merchant) || 0) + Number(item.amount || 0));
+  const askedMerchant = [...merchantTotals.keys()].sort((a, b) => b.length - a.length).find(name => text.includes(name.toLowerCase()));
+
+  if (askedMerchant && /(spend|spent|much|save|reduce|cut|budget|cost)/.test(text)) {
+    const merchantTransactions = expenses.filter(item => item.merchant === askedMerchant), amount = merchantTotals.get(askedMerchant), estimate = amount * 0.1;
+    const suggestion = /(save|reduce|cut|budget)/.test(text) ? ` If you chose to reduce this merchant's spending by 10%, that would be about ${money(estimate)} this month; it’s a what-if estimate.` : '';
+    return { answer: `You recorded ${money(amount)} across ${merchantTransactions.length} ${askedMerchant} expense${merchantTransactions.length === 1 ? '' : 's'} in ${monthLabel}.${suggestion}`, evidence: `${merchantTransactions.length} matching transactions in ${currentMonth}.` };
+  }
 
   if (/(recurr|subscription|monthly charge|regular payment)/.test(text)) {
     const recurring = ledger.findRecurring(transactions);
