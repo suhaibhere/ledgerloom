@@ -32,7 +32,7 @@ async function generateChat({ message, history = [], spendingSummary = null, mod
     body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700 } })
   };
   let response;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     try { response = await fetch(endpoint, { ...request, signal: AbortSignal.timeout(45000) }); }
     catch (error) {
       const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
@@ -41,10 +41,11 @@ async function generateChat({ message, history = [], spendingSummary = null, mod
       if (timedOut) throw Object.assign(new Error('Gemini did not respond within 45 seconds. Try again shortly or choose the other model.'), { status: 504 });
       throw Object.assign(new Error('LedgerLoom could not connect to Google Gemini. Please try again; if this continues, check the Render service logs.'), { status: 502 });
     }
-    if (response.status !== 503 || attempt === 1) break;
-    console.warn(`Gemini returned HTTP 503 for ${model}; retrying once after a short delay.`);
+    if (response.status !== 503 || attempt === 3) break;
+    const backoffMs = 1000 * (2 ** attempt) + Math.random() * 400;
+    console.warn(`Gemini returned HTTP 503 for ${model}; retry ${attempt + 1}/3 in about ${Math.round(backoffMs)}ms.`);
     if (response.body) await response.body.cancel().catch(() => {});
-    await new Promise(resolve => setTimeout(resolve, 700 + Math.random() * 400));
+    await new Promise(resolve => setTimeout(resolve, backoffMs));
   }
   if (!response.ok) {
     console.warn(`Gemini API request failed with HTTP ${response.status} for model ${model}.`);
@@ -53,6 +54,7 @@ async function generateChat({ message, history = [], spendingSummary = null, mod
     if (response.status === 403) throw Object.assign(new Error('Gemini denied this request. Check the API key restrictions, project access, and model availability in Google AI Studio.'), { status: 502 });
     if (response.status === 404) throw Object.assign(new Error('The selected Gemini model is not available for this API key. Choose another model.'), { status: 502 });
     if (response.status === 429) throw Object.assign(new Error('Gemini rate limit or quota reached. Wait and try again, or check your Google AI Studio usage limits.'), { status: 429 });
+    if (response.status === 503) throw Object.assign(new Error('Google Gemini is still temporarily overloaded. Try the other model above, or wait a few minutes and retry.'), { status: 503 });
     if (response.status >= 500) throw Object.assign(new Error('Google Gemini is having a temporary service problem. Please try again shortly.'), { status: 502 });
     throw Object.assign(new Error(`Gemini request failed (HTTP ${response.status}). Check the selected model and API key settings.`), { status: 502 });
   }
