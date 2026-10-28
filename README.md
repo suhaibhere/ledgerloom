@@ -29,7 +29,7 @@ The Render free service sleeps after inactivity, so its first request may take a
 - User-scoped transaction CRUD, filtering, searching, sorting, and pagination.
 - CSV and XLSX UPI/bank statement import with date and amount normalization, merchant recognition, income/refund/transfer classification, categorization, and duplicate skipping.
 - Dashboard totals, category and merchant breakdowns, daily/monthly charts, recurring-pattern detection, and evidence-backed deterministic observations calculated from saved records.
-- Money Coach has two modes: a private, deterministic spending coach that sends no data to an AI provider, and optional open-ended Gemini chat. Gemini processes a message only when the user checks the opt-in box for that message. Recent Gemini chat messages are sent for conversational context. A separate unchecked option allows an aggregate summary of current-month income, expenses, count, and category totals; transaction-level records are never sent. Google may use free-tier submitted content to improve its products, so the consent text is shown in the chat before enabling Gemini.
+- Money Coach offers general-purpose Gemini chat by default. Messages and recent chat history are sent to Google; the chat visibly discloses this. LedgerLoom transaction data is not included in the request. Google may use free-tier content to improve its products.
 - Category corrections saved per user and reused during later imports.
 - Receipt image/PDF upload validation and private storage. OCR is not configured; uploaded receipts are marked for manual review.
 

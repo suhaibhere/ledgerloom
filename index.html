@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#f7f7f4" />
   <meta name="description" content="LedgerLoom helps you understand where your money goes." />
   <title>LedgerLoom — Understand your money</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261028-2" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261028-3" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261028-2" />
+  <link rel="stylesheet" href="styles.css?v=20261028-3" />
 </head>
 <body>
   <section class="auth-gate" id="authGate" aria-labelledby="authTitle" hidden>
@@ -56,11 +56,10 @@
     </div>
   </main>
   <aside class="coach-widget" id="coachWidget" aria-label="LedgerLoom Money Coach" hidden>
-    <header class="coach-header"><span class="coach-mark" aria-hidden="true">✳</span><div><b>Money Coach</b><small>Private coach · optional Gemini</small></div><button type="button" class="coach-close" id="coachClose" aria-label="Close Money Coach">×</button></header>
-    <div class="coach-disclosure"><b>Choose how Money Coach answers</b><span>Private coach uses LedgerLoom’s rules and stays on this server. Turn on Gemini for a general-purpose chatbot; your new message and recent Gemini chat history will be processed by Google. Google may use free-tier content to improve products. Spending data is only sent if you separately opt in below.</span></div>
-    <div class="coach-consent"><label><input id="coachUseGemini" type="checkbox"/><span>Use Gemini for this chat message</span></label><label id="coachSpendingOption" class="coach-suboption"><input id="coachIncludeSpending" type="checkbox" disabled/><span>Also include an aggregate summary of my spending</span></label><small id="coachAvailability">External processing is optional. Gemini must be configured by the site owner.</small></div>
-    <div class="coach-messages" id="coachMessages" role="log" aria-live="polite" aria-relevant="additions"><div class="coach-message coach-answer">Hi! Ask where your money went, what’s recurring, or where you could try spending less.</div></div>
-    <div class="coach-prompts" id="coachPrompts"><button type="button" data-coach-prompt="Where did my money go this month?">Where did it go?</button><button type="button" data-coach-prompt="Where could I save money?">Where could I save?</button><button type="button" data-coach-prompt="Show my recurring payments">Recurring payments</button></div>
+    <header class="coach-header"><span class="coach-mark" aria-hidden="true">✳</span><div><b>Money Coach</b><small>General AI chat</small></div><button type="button" class="coach-close" id="coachClose" aria-label="Close Money Coach">×</button></header>
+    <p class="coach-disclosure">Powered by Google Gemini. Your messages and recent chat history are sent to Google. LedgerLoom transaction data is not included. Google may use free-tier chats to improve products.</p>
+    <div class="coach-messages" id="coachMessages" role="log" aria-live="polite" aria-relevant="additions"><div class="coach-message coach-answer">Hi! I’m LedgerLoom’s AI assistant. Ask me anything.</div></div>
+    <div class="coach-prompts" id="coachPrompts"><button type="button" data-coach-prompt="How do I make a simple monthly budget?">Make a budget</button><button type="button" data-coach-prompt="Explain UPI in simple terms">Explain UPI</button><button type="button" data-coach-prompt="Give me one practical way to save money">Saving ideas</button></div>
     <form class="coach-form" id="coachForm"><label class="sr-only" for="coachInput">Ask Money Coach anything</label><input id="coachInput" name="message" maxlength="500" autocomplete="off" placeholder="Ask Money Coach anything…" required/><button type="submit" id="coachSend" aria-label="Send question">↑</button></form>
     <small class="coach-footnote">AI can make mistakes. Financial replies are general information, not professional advice.</small>
   </aside>
@@ -68,6 +67,6 @@
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
   <div class="modal-backdrop" id="importModal" role="dialog" aria-modal="true" aria-labelledby="importTitle" hidden><div class="modal"><button class="modal-close" id="closeImport" aria-label="Close dialog">×</button><div class="modal-icon">⇧</div><div class="section-kicker">MAKE SENSE OF YOUR STATEMENT</div><h2 id="importTitle">Bring your money<br/>into the picture.</h2><p class="modal-copy">Upload a CSV or XLSX exported from UPI apps or your bank. The server validates, normalizes and stores each transaction in your private account.</p><div class="drop-zone" id="dropZone" tabindex="0"><input id="fileInput" type="file" accept=".csv,.txt,.xlsx" hidden/><div class="drop-icon">↥</div><b>Drop your statement here</b><span>or <button id="browseFile" class="inline-button">browse files</button> · CSV or XLSX up to 10 MB</span></div><div id="importProgress" class="import-progress" hidden><div class="progress-heading"><span id="progressLabel">Sending your file securely…</span><span id="progressPercent">…</span></div><div class="progress-rail"><i id="progressBar"></i></div><div class="progress-stages"><span data-stage="1">Parse</span><span data-stage="2">Normalize</span><span data-stage="3">Categorize</span><span data-stage="4">Store & analyze</span></div></div><label class="receipt-link">Have a receipt instead? <input id="receiptInput" type="file" accept="image/png,image/jpeg,application/pdf"/> Upload receipt</label><p class="privacy-note">♢ &nbsp; Uploaded statements are processed by LedgerLoom and saved in your account database.</p><div id="importError" class="import-error" hidden></div></div></div>
   <div class="modal-backdrop" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle" hidden><div class="modal edit-modal"><button class="modal-close" id="closeEdit" aria-label="Close dialog">×</button><div class="section-kicker">MAKE IT YOURS</div><h2 id="editTitle">Edit transaction</h2><form id="editForm"><input id="editId" type="hidden"/><label>Merchant<input id="editMerchant" required maxlength="100"/></label><div class="form-row"><label>Amount (₹)<input id="editAmount" type="number" min="0.01" step="0.01" required/></label><label>Type<select id="editType"><option>EXPENSE</option><option>INCOME</option><option>REFUND</option><option>TRANSFER</option></select></label></div><div class="form-row"><label>Category<select id="editCategory"></select></label><label>Date<input id="editDate" type="date" required/></label></div><label>Note<input id="editNote" maxlength="500"/></label><button class="primary-button" type="submit">Save changes <span>→</span></button><button class="delete-action" id="deleteTransaction" type="button">Delete transaction</button></form></div></div>
-  <script src="app.js?v=20261028-2"></script>
+  <script src="app.js?v=20261028-3"></script>
 </body>
 </html>
