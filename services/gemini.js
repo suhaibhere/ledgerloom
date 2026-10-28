@@ -31,10 +31,14 @@ async function generateChat({ message, history = [], spendingSummary = null, mod
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700 } }),
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(45000)
     });
-  } catch {
-    throw Object.assign(new Error('Gemini could not be reached right now. Please try again.'), { status: 502 });
+  } catch (error) {
+    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    const causeCode = typeof error?.cause?.code === 'string' && /^[A-Z0-9_]{1,40}$/.test(error.cause.code) ? error.cause.code : 'none';
+    console.warn(`Gemini ${timedOut ? 'request timed out' : 'connection failed'} for ${model}; cause=${causeCode}.`);
+    if (timedOut) throw Object.assign(new Error('Gemini is taking too long to respond. Try the Flash-Lite model or send your question again.'), { status: 504 });
+    throw Object.assign(new Error('LedgerLoom could not connect to Google Gemini. Please try again; if this continues, check the Render service logs.'), { status: 502 });
   }
   if (!response.ok) {
     console.warn(`Gemini API request failed with HTTP ${response.status} for model ${model}.`);
