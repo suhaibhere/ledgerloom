@@ -1,15 +1,20 @@
 'use strict';
 
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const MODEL_CHOICES = Object.freeze({
+  lite: 'gemini-3.5-flash-lite',
+  flash: 'gemini-3.8-flash'
+});
+const DEFAULT_MODEL = MODEL_CHOICES.lite;
 
 function configured() { return Boolean(String(process.env.GEMINI_API_KEY || '').trim()); }
 
-async function generateChat({ message, history = [], spendingSummary = null }) {
+async function generateChat({ message, history = [], spendingSummary = null, modelChoice }) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
-  if (!key) throw Object.assign(new Error("AI chat isn't configured yet. Add GEMINI_API_KEY in Render, or turn off Gemini to use the private Money Coach."), { status: 503 });
+  if (!key) throw Object.assign(new Error("AI chat isn't configured yet. The site owner needs to add GEMINI_API_KEY in Render."), { status: 503 });
 
-  const model = String(process.env.GEMINI_MODEL || DEFAULT_MODEL).trim();
-  if (!/^[a-zA-Z0-9._-]{1,100}$/.test(model)) throw Object.assign(new Error('Gemini model configuration is invalid.'), { status: 500 });
+  const configuredModel = String(process.env.GEMINI_MODEL || DEFAULT_MODEL).trim();
+  const model = MODEL_CHOICES[modelChoice] || (Object.values(MODEL_CHOICES).includes(configuredModel) ? configuredModel : null);
+  if (!model) throw Object.assign(new Error('Choose a supported AI model.'), { status: 400 });
   const instructions = [
     'You are LedgerLoom, a friendly, general-purpose chatbot. Answer ordinary questions naturally across topics; do not force every conversation toward personal finance.',
     'Be clear, useful, and conversational. If you do not know something, say so. Do not claim to browse the web or access live information.',
@@ -25,7 +30,7 @@ async function generateChat({ message, history = [], spendingSummary = null }) {
     response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700, temperature: 0.7 } }),
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: instructions }] }, contents, generationConfig: { maxOutputTokens: 700 } }),
       signal: AbortSignal.timeout(20000)
     });
   } catch {
@@ -42,4 +47,4 @@ async function generateChat({ message, history = [], spendingSummary = null }) {
   return { answer, provider: 'gemini' };
 }
 
-module.exports = { configured, generateChat };
+module.exports = { configured, generateChat, MODEL_CHOICES };

@@ -114,7 +114,8 @@ async function handleAPI(req, res, url) {
     const body = await readJSON(req, 32 * 1024), message = String(body.message || '').trim();
     if (!validString(message, 500)) return fail(res, 400, 'Enter a question of up to 500 characters.');
     if (body.useGemini === true) {
-      if (!gemini.configured()) return fail(res, 503, "AI chat isn't configured yet. Add GEMINI_API_KEY in Render, or turn off Gemini to use the private Money Coach.");
+      if (!gemini.configured()) return fail(res, 503, "AI chat isn't configured yet. The site owner needs to add GEMINI_API_KEY in Render.");
+      if (!gemini.MODEL_CHOICES[body.modelChoice]) return fail(res, 400, 'Choose a supported AI model.');
       const history = Array.isArray(body.history) ? body.history.slice(-10).filter(item => item && ['user', 'model'].includes(item.role) && typeof item.text === 'string').map(item => ({ role: item.role, text: item.text.slice(0, 1000) })) : [];
       let spendingSummary = null;
       if (body.includeSpending === true) {
@@ -125,7 +126,7 @@ async function handleAPI(req, res, url) {
         for (const row of expenses) categories[row.category] = (categories[row.category] || 0) + Number(row.amount || 0);
         spendingSummary = { month, expenseTotal: expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0), incomeTotal: current.filter(row => row.type === 'INCOME').reduce((sum, row) => sum + Number(row.amount || 0), 0), expenseCount: expenses.length, categoryTotals: categories };
       }
-      return send(res, 200, await gemini.generateChat({ message, history, spendingSummary }));
+      return send(res, 200, await gemini.generateChat({ message, history, spendingSummary, modelChoice: body.modelChoice }));
     }
     const rows = await all('SELECT id,transaction_date,amount,type,merchant,description,category FROM transactions WHERE user_id=? ORDER BY transaction_date DESC LIMIT 5000', [uid]);
     const transactions = rows.map(row => ({ id: row.id, date: row.transaction_date, amount: Number(row.amount), type: row.type, merchant: row.merchant, description: row.description, category: row.category }));
