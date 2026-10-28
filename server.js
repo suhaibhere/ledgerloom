@@ -195,4 +195,12 @@ function listenAtAvailablePort(port, attempt = 0) {
   server.once('error', onError); server.once('listening', onListening); server.listen(port, HOST);
 }
 store.initialize().then(() => listenAtAvailablePort(PORT)).catch(error => { console.error(`LedgerLoom database could not initialize: ${error.message}`); process.exitCode = 1; });
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { store.close().finally(() => server.close(() => process.exit(0))); });
+let shutdownStarted = false;
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {
+  if (shutdownStarted) return;
+  shutdownStarted = true;
+  const closeStore = () => store.close().then(() => process.exit(0)).catch(error => { console.error(`LedgerLoom database shutdown failed: ${error.message}`); process.exit(1); });
+  if (!server.listening) { closeStore(); return; }
+  // Stop accepting work first, then close the pool after in-flight requests finish.
+  server.close(closeStore);
+});
